@@ -30,6 +30,8 @@
 	<span id='indicator'>
 	</span>
 
+	<button type="button" onclick='ClearData();'>clear</button>
+	
 	<script type="text/javascript">
 	$("#modelselect").change(function(){
 		$('#indicator').text('loading...');
@@ -151,9 +153,6 @@
 			});
 		}
 	</script>
-	<p>
-	<button type="button" onclick='ClearData();'>clear</button>
-	</p>
 	<!-- <button type="button" onclick='predict();'>predict</button> -->
 </body>
 </html>
