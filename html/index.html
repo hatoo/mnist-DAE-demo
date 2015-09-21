@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>MNIST demo</title>
+	<link rel="stylesheet" href="">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
+	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<script src="mnist/dae_z80_n500.js"></script>
+</head>
+<body>
+	<h1>draw number here!</h1>
+
+	model:
+	<select id='modelselect' >
+	<option value='dae_z25_n500.js'>Zero Masking 25%</option>
+	<option value='dae_z50_n500.js'>Zero Masking 50%</option>
+	<option value='dae_z80_n500.js' selected=true>Zero Masking 80%</option>
+	<option value='dae_sp25_n500.js'>Salt and Peppar 25%</option>
+	<option value='dae_sp50_n500.js'>Salt and Peppar 50%</option>
+	<option value='dae_sp75_n500.js'>Salt and Peppar 75%</option>
+	<option value='dae_g25_n500.js'>Additive Gaussian Noise 0.25</option>
+	<option value='dae_g50_n500.js'>Additive Gaussian Noise 0.50</option>
+	<option value='dae_g75_n500.js'>Additive Gaussian Noise 0.75</option>
+	<option value='dae_g100_n500.js'>Additive Gaussian Noise 1</option>
+	</select>
+
+	<span id='indicator'>
+	</span>
+
+	<script type="text/javascript">
+	$("#modelselect").change(function(){
+		$('#indicator').text('loading...');
+		var fname = $("#modelselect option:selected").val();
+		var script = document.createElement('script');
+		script.type = 'text/javascript';
+		script.src = "./mnist/"+fname;
+		script.onload = function( e ){
+			console.log('loded');
+			$('#indicator').text('loaded');
+			w_tr = numeric.transpose(w);
+			predict();
+		}
+		document.head.appendChild(script);
+	});
+
+	</script>
+
+	<br>
+
+	<svg id="draw" width='450px' height='400px' style='float:left;'></svg>
+
+	<svg id="rdraw" width='400px' height='400px' style='float:left;'></svg>
+	<script type="text/javascript">
+		var scale = d3.scale.linear().domain([0,27]).range([0,400]);
+		var svg = d3.select('#draw');
+
+		var N = 28*28;
+		var data=[];
+		for(var i=0;i<N;i++){
+			data.push(0);
+		}
+		var img = svg.append('g').selectAll('rect').data(data);
+		var rimg = d3.select('#rdraw');
+
+		rimg.selectAll('rect').data(data).enter().append('rect').attr({
+			x:function(d,i){return scale(i%28);},
+			y:function(d,i){return scale(Math.floor(i/28));},
+			width:scale(1),
+			height:scale(1),
+			"stroke-width":1,
+			"stroke":'black',
+			fill:function(d){
+				var c = 255*(d);
+				return d3.rgb(c,c,c);
+			}
+		});
+
+		img.enter().append('rect').attr({
+			x:function(d,i){return scale(i%28);},
+			y:function(d,i){return scale(Math.floor(i/28));},
+			width:scale(1),
+			height:scale(1),
+			"stroke-width":1,
+			"stroke":'black',
+			fill:function(d){
+				if(d==1){
+					return 'black';
+				}else{
+					return 'white';
+				}
+			}
+		}).on('mouseover',function(d,i){
+			d3.event.preventDefault();
+			if(d3.event.buttons==1){
+				data[i]=1;
+				d3.select(this).attr('fill','black');
+				predict();
+			}
+		}).on('mousedown',function(d,i){
+			d3.event.preventDefault();
+			data[i]=1;
+			d3.select(this).attr('fill','black');
+			predict();
+		});
+		function ClearData(){
+			for(var i=0;i<N;i++){
+				data[i]=0;
+			}
+			img.data(data).attr({
+				fill:function(d){
+					if(d==1){
+						return 'black';
+					}else{
+						return 'white';
+					}
+				}
+			});
+			predict();
+		}
+
+		function sigmoid(v){
+			return v.map(function(v){
+				return 1 / (1+Math.exp(-v));
+			});
+		}
+		function zip(arrays) {
+    		return arrays[0].map(function(_,i){
+       			return arrays.map(function(array){return array[i]})
+    		});
+		}
+
+		w_tr = numeric.transpose(w);
+		function predict(){
+			var h = sigmoid(numeric.add(numeric.dot(data, w_tr), b1));
+			var y = sigmoid(numeric.add(numeric.dot(h, w), b2));
+
+			rimg.selectAll('rect').data(y).attr({
+				x:function(d,i){return scale(i%28);},
+				y:function(d,i){return scale(Math.floor(i/28));},
+				width:scale(1),
+				height:scale(1),
+				"stroke-width":1,
+				"stroke":'black',
+				fill:function(d){
+					var c = 255*(d);
+					return d3.rgb(c,c,c);
+				}
+			});
+		}
+	</script>
+	<p>
+	<button type="button" onclick='ClearData();'>clear</button>
+	</p>
+	<!-- <button type="button" onclick='predict();'>predict</button> -->
+</body>
+</html>
